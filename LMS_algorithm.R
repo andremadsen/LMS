@@ -126,7 +126,7 @@ TannerB <- TannerB[keep]
 b <- data.frame(TannerB, hormone)
 Girls_SHBG <- gamlss(hormone~cs(TannerB, df=2), sigma.fo=~cs(TannerB, df=0), nu.fo=~cs(TannerB, df=0), family=BCCG, data=b)
 
-centiles(Girls_SHBG, age, cent=c(2.28, 15.87, 50, 84.13, 97.72), main = "", ylab ="SHBG, nmol/L", xlab= "Age, years", box(lwd=2),
+centiles(Girls_SHBG, TannerB, cent=c(2.28, 15.87, 50, 84.13, 97.72), main = "", ylab ="SHBG, nmol/L", xlab= "Age, years", 
          lwd.centiles = 2, col.centiles = c("black", "black","red","black", "black"))
 
 

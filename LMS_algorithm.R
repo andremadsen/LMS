@@ -21,7 +21,7 @@ Data_Girls <- Data[Data$Gender == 2,] # New data frame with female observations
 
 # Required packages
 install.packages("gamlss")
-install.packages("ggplot")
+install.packages("ggplot2")
 library(gamlss) # or manually enable all 'gamlss', 'gamlss.data' and 'gamlss.dist' packages
 library(ggplot2)
 

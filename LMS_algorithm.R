@@ -13,9 +13,9 @@
 
 
 # Import .csv dataset into R/RStudio
-Data <- read.csv(file.choose(), header=T, sep=",", dec=".") # European .csv has sep=";" and dec=","
-Data_Boys  <- Data[Data$Gender == 1,] # New data frame with male observations
-Data_Girls <- Data[Data$Gender == 2,] # New data frame with female observations
+Data <- read.csv(file.choose(), header=T, sep=",", dec=".")    # European .csv has sep=";" and dec=","
+Data_Boys  <- Data[Data$Gender == 1,]                          # New data frame with male observations
+Data_Girls <- Data[Data$Gender == 2,]                          # New data frame with female observations
 
 
 # Required packages
@@ -34,7 +34,7 @@ plot.default(Data_Girls$Age_yrs, Data_Girls$s_SHBG) #plot Age vs Hormone levels 
 # Establish new data frame ('b') with no missing values for girls' <Age_yrs> and <s_SHBG>
 hormone <- Data_Girls$s_SHBG
 age     <- Data_Girls$Age_yrs
-keep    <- !is.na(hormone)&!is.na(age)
+keep    <- !is.na(hormone)&!is.na(age)&hormone>0
 hormone <- hormone[keep]
 age     <- age[keep]
 b       <- data.frame(age, hormone)

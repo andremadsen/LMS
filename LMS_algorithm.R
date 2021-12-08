@@ -102,15 +102,17 @@ ggsave("Girls_SHBG_LMS_model.tiff", dpi = 1000, compression = "lzw")
 
 
 ### Other tools ###
-pnorm(2) 	 # +2 SD is equivalent to p97.72499
-qnorm(0.9772499)	 # p97.72499 is equivalent to +2 SD 
-
-
-### To calculate percentiles reference curves instead of SD curves
+### Calculate percentiles reference curves instead of SD curves
 newx <- seq(6,16,0.1)  
 mat3 <- centiles.pred(LMS_obj, type = "centiles", xname = "age", xvalues = newx, cent = c(2.5, 10, 25, 50, 75, 90, 97.5))
 colnames(mat3) <- c("age","p2.5","p10","p25","p50","p75","p90","p97.5")
 
-
-### Extract z-scores for individual observations comprising the current LMS model
+### Extract Z-scores for individual observations comprising the current LMS model
 z <- residuals(LMS_obj, what = "z-scores", type = "simple", terms=NULL)
+
+### Calculate Z-score from L,M,S entries for age
+(((X/M)^L)-1)/(L*S) # X = blood sample result
+
+### Convert Z-scores to percentile scale
+pnorm(2) 	 # +2 SD is equivalent to p97.72499
+qnorm(0.9772499)	 # p97.72499 is equivalent to +2 SD 

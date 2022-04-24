@@ -71,13 +71,13 @@ L <- predict(LMS_obj, what="nu", type="response", newdata=data.frame(age = age))
 M <- predict(LMS_obj, what="mu", type="response", newdata=data.frame(age = age))            # retrieve M parameter values in the model
 S <- predict(LMS_obj, what="sigma", type="response", newdata=data.frame(age = age))         # retrieve S parameter values in the model
 LMS_Data <- data.frame(age,L,M,S)                                                           
-write.csv(LMS_Data, file = "Girls_SHBG_LMS_scores.csv")
+write.csv(LMS_Data, file = "Girls_SHBG_LMS_for_age.csv")
 
 
 # Extract model centile coordinates for age
 newx <- seq(6,16,0.1)
 mat2 <- data.frame(centiles.pred(LMS_obj, xname="age", xvalues=newx, type="standard-centiles"))
-write.csv(mat2, file = "Girls_SHBG_Centile_coordinates.csv")
+write.csv(mat2, file = "Girls_SHBG_Centile_coordinates_for_age.csv")
 
 
 # Plot the LMS reference curve model

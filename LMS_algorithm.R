@@ -114,7 +114,7 @@ z <- residuals(LMS_obj, what = "z-scores", type = "simple", terms=NULL)
 ### Calculate Z-score from L,M,S entries for age
 (((X/M)^L)-1)/(L*S) # X = blood sample result
 
-### Calculate percentile coordinates using L,M,S entries for a certain age
+### Calculate percentile coordinates using L,M,S entries for age
 (M*(1+(L*S*X))^(1/L)) # X = number of SDs from the mean, e.g. c(-2, -1, 0, 1, 2)
 
 ### Convert Z-scores to percentile scale

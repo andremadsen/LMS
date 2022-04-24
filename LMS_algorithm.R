@@ -96,17 +96,18 @@ ggplot(b,aes(age,hormone2)) + geom_point(col="gray50", size=1) + theme_bw() + la
   annotate("text", x=17, y=mat2[101,"2"] , label = "+2 SD", color = "red") +
   annotate("text", x=17.4, y=mat2[101,"2"] , label = "", color = "white")
 
-
 #Print the ggplot figure (also supports .pdf and .jpeg)
 ggsave("Female_SHBG_LMS_model.tiff", dpi = 1000, compression = "lzw")
 
 
 
-### Other tools ###
+### Helpful utilities and features below
+
 ### Calculate percentiles reference curves instead of SD curves
 newx <- seq(6,16,0.1)  
 mat3 <- centiles.pred(LMS_obj, type = "centiles", xname = "age", xvalues = newx, cent = c(2.5, 10, 25, 50, 75, 90, 97.5))
 colnames(mat3) <- c("age","p2.5","p10","p25","p50","p75","p90","p97.5")
+View(mat3)
 
 ### Extract Z-scores for individual observations comprising the current LMS model
 z <- residuals(LMS_obj, what = "z-scores", type = "simple", terms=NULL)

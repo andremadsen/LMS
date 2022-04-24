@@ -111,7 +111,7 @@ colnames(mat3) <- c("age","p2.5","p10","p25","p50","p75","p90","p97.5")
 ### Extract Z-scores for individual observations comprising the current LMS model
 z <- residuals(LMS_obj, what = "z-scores", type = "simple", terms=NULL)
 
-### Calculate Z-score from L,M,S entries for age
+### Calculate patient Z-score using L,M,S entries for age
 (((X/M)^L)-1)/(L*S) # X = blood sample result
 
 ### Calculate percentile coordinates using L,M,S entries for age

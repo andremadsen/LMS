@@ -32,7 +32,7 @@ library(ggplot2)
 
 plot.default(Data_Girls$Age_yrs, Data_Girls$s_SHBG) #plot Age vs Hormone levels to visualize the setup and confirm correct variable names
 
-# Establish new data frame ('b') with no missing values for girls' <Age_yrs> and <s_SHBG>
+# Establish new data frame ('b') with no missing values for female <Age_yrs> and <s_SHBG>
 hormone <- Data_Girls$s_SHBG
 age     <- Data_Girls$Age_yrs
 keep    <- !is.na(hormone)&!is.na(age)&hormone>0
@@ -48,7 +48,7 @@ LMS_obj <- gamlss(hormone~cs(age, df=2), sigma.fo=~cs(age, df=0), nu.fo=~cs(age,
 centiles(LMS_obj, age, cent=c(2.275, 15.865, 50, 84.134, 97.725), main = "", ylab ="SHBG, nmol/L", xlab= "Age, years", box(lwd=2),
          lwd.centiles = 2, col.centiles = c("black", "black","red","black", "black"))
 
-# If the centiles are too underfitted/overfitted, re-run the LMS above and customize degrees of freedom
+# If the centiles are too underfitted/overfitted, re-run the LMS above and customize degrees of freedom (df)
 # Optimize model with respect to residual distribution and Q-test (see below)
 
 
@@ -71,13 +71,13 @@ L <- predict(LMS_obj, what="nu", type="response", newdata=data.frame(age = age))
 M <- predict(LMS_obj, what="mu", type="response", newdata=data.frame(age = age))            # retrieve M parameter values in the model
 S <- predict(LMS_obj, what="sigma", type="response", newdata=data.frame(age = age))         # retrieve S parameter values in the model
 LMS_Data <- data.frame(age,L,M,S)                                                           
-write.csv(LMS_Data, file = "Girls_SHBG_LMS_for_age.csv")
+write.csv(LMS_Data, file = "Female_SHBG_LMS_for_age.csv")
 
 
 # Extract model centile coordinates for age
 newx <- seq(6,16,0.1)
 mat2 <- data.frame(centiles.pred(LMS_obj, xname="age", xvalues=newx, type="standard-centiles"))
-write.csv(mat2, file = "Girls_SHBG_Centile_coordinates_for_age.csv")
+write.csv(mat2, file = "Female_SHBG_Centile_coordinates_for_age.csv")
 
 
 # Plot the LMS reference curve model
@@ -98,7 +98,7 @@ ggplot(b,aes(age,hormone2)) + geom_point(col="gray50", size=1) + theme_bw() + la
 
 
 #Print the ggplot figure (also supports .pdf and .jpeg)
-ggsave("Girls_SHBG_LMS_model.tiff", dpi = 1000, compression = "lzw")
+ggsave("Female_SHBG_LMS_model.tiff", dpi = 1000, compression = "lzw")
 
 
 

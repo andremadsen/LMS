@@ -5,7 +5,7 @@
 Interactive reference curves are now available at the Anylite eHealth platform | https://anylite.io and https://anylite.no 
 
 # Prepare dataset (e.g. Excel) and Save as .csv format:
-# R does not allow spaces [ ] or hyphens [-] in column names (i.e. Excel top row); instead use underlines: e.g. 'Albumin_G' (NOT 'Albumin G' or 'Albumin-G')
+# R does not allow spaces [ ] or hyphens [-] in column names (i.e. Excel top row); instead use underlines: e.g. 'C_reactive_protein'
 # R does not allow column names to start with numbers; do naming workarounds: e.g. 's_17OHP' (NOT '17OHP' or '17-OHP')
 
 # Dataset must contain a column to specify child gender: Example below: <Gender> 1=male, 2=female

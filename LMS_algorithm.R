@@ -66,7 +66,7 @@ hist(b$SHBG_sds, breaks=30, xlab="SHBG  z-scores", ylab="Frequency", main="Histo
 
 
 # Extract model L,M,S parameters for the relevant age range 6-16 years
-newx <- seq(6,16,0.1)
+age <- seq(6,16,0.1)
 L <- predict(LMS_obj, what="nu", type="response", newdata=data.frame(age = age))            # retrieve L parameter values in the model
 M <- predict(LMS_obj, what="mu", type="response", newdata=data.frame(age = age))            # retrieve M parameter values in the model
 S <- predict(LMS_obj, what="sigma", type="response", newdata=data.frame(age = age))         # retrieve S parameter values in the model

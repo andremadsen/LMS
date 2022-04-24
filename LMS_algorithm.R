@@ -10,6 +10,7 @@ Interactive reference curves are now available at the Anylite eHealth platform |
 
 # Dataset must contain a column to specify child gender: Example below: <Gender> 1=male, 2=female
 # Dataset must contain a column to specify child age: Example below: <Age_yrs> (numerical scale or decimal number)
+# Any number of columns representing numerical measures (e.g. blood sample results, hormone levels) are modelled sequentially as shown below
 
 
 # Import .csv dataset into R/RStudio
@@ -43,7 +44,7 @@ b       <- data.frame(age, hormone)
 # Apply LMS to the Hormone~Age data frame
 LMS_obj <- gamlss(hormone~cs(age, df=2), sigma.fo=~cs(age, df=0), nu.fo=~cs(age, df=0), family=BCCG, data=b)
 
-# Visualize the LMS model: the centiles below correspond to -2,-1,mean,+1 and +2 SD curves and can be customized
+# Visualize the LMS model: the centiles below correspond to -2, -1, mean, +1 and +2 SD curves and can be customized
 centiles(LMS_obj, age, cent=c(2.275, 15.865, 50, 84.134, 97.725), main = "", ylab ="SHBG, nmol/L", xlab= "Age, years", box(lwd=2),
          lwd.centiles = 2, col.centiles = c("black", "black","red","black", "black"))
 
@@ -112,6 +113,9 @@ z <- residuals(LMS_obj, what = "z-scores", type = "simple", terms=NULL)
 
 ### Calculate Z-score from L,M,S entries for age
 (((X/M)^L)-1)/(L*S) # X = blood sample result
+
+### Calculate percentile coordinates using L,M,S entries for a certain age
+(M*(1+(L*S*X))^(1/L)) # X = number of SDs from the mean, e.g. c(-2, -1, 0, 1, 2)
 
 ### Convert Z-scores to percentile scale
 pnorm(2) 	 # +2 SD is equivalent to p97.72499

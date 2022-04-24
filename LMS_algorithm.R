@@ -48,7 +48,7 @@ LMS_obj <- gamlss(hormone~cs(age, df=2), sigma.fo=~cs(age, df=0), nu.fo=~cs(age,
 centiles(LMS_obj, age, cent=c(2.275, 15.865, 50, 84.134, 97.725), main = "", ylab ="SHBG, nmol/L", xlab= "Age, years", box(lwd=2),
          lwd.centiles = 2, col.centiles = c("black", "black","red","black", "black"))
 
-# If the centiles are too underfitted/overfitted, re-run the LMS above and customize degrees of freedom (df)
+# If the centiles are underfitted/overfitted, re-run the LMS above and customize degrees of freedom (df)
 # Optimize model with respect to residual distribution and Q-test (see below)
 
 

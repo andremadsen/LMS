@@ -2,7 +2,7 @@
 
 ### LMS digital reference curve modelling ###
 
-Interactive reference curves are now available at the Anylite platform | https://anylite.io and https://anylite.no 
+Interactive reference curves are now available at the Anylite platform | https://anylite.io
 
 # Prepare dataset (e.g. Excel) and Save as .csv format:
 # R does not allow spaces [ ] or hyphens [-] in column names (i.e. Excel top row); instead use underlines: e.g. 'C_reactive_protein'

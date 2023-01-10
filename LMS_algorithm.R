@@ -81,7 +81,7 @@ write.csv(mat2, file = "Female_SHBG_Centile_coordinates_for_age.csv")
 
 
 # Plot the LMS reference curve model
-ggplot(b,aes(age,hormone2)) + geom_point(col="gray50", size=1) + theme_bw() + labs(title="") + 
+ggplot(b,aes(age,hormone)) + geom_point(col="gray50", size=1) + theme_bw() + labs(title="") + 
   scale_x_discrete(name ="Age, y", limits=c(6:16)) + theme(text = element_text(size=14)) + 
   scale_y_continuous(name ="SHBG, nmol/L", limits=c(0,200)) +
   geom_smooth(aes(x=mat2$age, y=mat2$`-2`), data=mat2, inherit.aes = FALSE, stat="identity", linetype="dashed", color = "red") + 

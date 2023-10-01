@@ -1,0 +1,305 @@
+
+# Påkrevde pakker
+```{r}
+#install.packages("tidyverse")
+#install.packages("gamlss")
+library(tidyverse)
+library(gamlss)
+```
+
+
+# Lager et demo-datasett: Alder, T4, TSH og beregner T4/TSH ratio
+```{r}
+demo_df <- data.frame(Alder = abs(rnorm(5000, mean=10, sd=5))) %>% 
+     mutate(T4 = abs(rnorm(5000, mean=90, sd=1))) %>% 
+     mutate(T4 = abs(T4 - (0.1*Alder))) %>% 
+     mutate(TSH = abs(rnorm(5000, mean=3, sd=1))) %>% 
+     mutate(TSH = abs(TSH + (0.1*Alder))) %>% 
+     filter(Alder <= 20, TSH > 1) %>% 
+     mutate(T4_TSH_ratio = T4/TSH) %>%
+     mutate(across(where(is.numeric), round, 3)) %>% 
+     arrange(Alder)
+
+View(demo_df)
+
+# For å importere egne data fra .csv fil:
+# demo_df <- read.csv(file=file.choose(), header=T, sep=";", dec=",")
+```
+
+```{r}
+demo_df %>% 
+  ggplot(aes(x=Alder, y=T4_TSH_ratio)) +
+  geom_point(size=0.5) + theme_bw() +
+  theme(panel.grid.minor = element_blank()) 
+```
+
+
+# ########
+# Modellere kontinerlig LMS-referansekurve for TSH/T4 som funksjon av alder
+# ########
+
+```{r}
+demo_lms <- demo_df %>% 
+     transmute(Alder, T4_TSH_ratio) %>% 
+     na.omit() # må fjerne rader med en eller flere NA/missing values
+```
+
+
+# Modellerer kontinuerlig LMS-referansekurve for T4/TSH ratio
+```{r}
+LMS_obj <- gamlss(T4_TSH_ratio ~ cs(Alder, df=2), 
+                       sigma.fo=~cs(Alder, df=0), 
+                          nu.fo=~cs(Alder, df=0), family=BCCG, data=demo_lms)
+
+# Preliminært plot (tilpass degrees of freedom 'df' over etter behov -> remodel)
+centiles(LMS_obj, cent=c(2.5,50,97.5), 
+         lwd.centiles = 2, 
+         col.centiles = c("red", "black","red"))
+```
+
+# Lagre "blueprinten" for referansekurven
+```{r}
+# Trekker opp en alders-increment rekke
+Alder <- seq(0, 20, 0.1)
+
+# Beregner L
+L <- predict(LMS_obj, what="nu", type="response", newdata=data.frame(Alder = Alder))    
+
+# Beregner M
+M <- predict(LMS_obj, what="mu", type="response", newdata=data.frame(Alder = Alder))            
+
+# Beregner S
+S <- predict(LMS_obj, what="sigma", type="response", newdata=data.frame(Alder = Alder))  
+
+# Binder sammen til data frame
+LMS_Data <- data.frame(Alder, L, M, S) 
+
+# Lagre referansekurven som .csv: denne filen kan importeres inn i Anylite.
+write.table(LMS_Data, "TSH_T4_LMS_modell.csv",
+            na = "",
+            row.names = FALSE,
+            col.names = TRUE,
+            append = FALSE,
+            sep = ";",
+            dec = ",")
+```
+
+
+# Plotter endelig referansekurve
+```{r warning=FALSE}
+# Beregne centiler for modellen
+newx <- seq(0, 20, 0.1)
+mat2 <- data.frame(centiles.pred(LMS_obj, xname="Alder", xvalues=newx, type="standard-centiles"))
+rad <- nrow(mat2)
+maks <- max(mat2$Alder)
+
+# Plot model
+ggplot(demo_lms, aes(Alder, T4_TSH_ratio)) + geom_point(col="gray50", size=1) + theme_bw() + labs(title="") + 
+  scale_x_continuous(name ="Alder", limits=c(0,22))+ theme(text = element_text(size=14)) + 
+  scale_y_continuous(name ="T4/TSH ratio\n", limits=c(0,90)) +
+  geom_smooth(aes(x=mat2$Alder, y=mat2$X.2), data=mat2, inherit.aes = FALSE, 
+              stat="identity", linetype="dashed", color = "red") + 
+  geom_smooth(aes(x=mat2$Alder, y=mat2$X.1),data=mat2, inherit.aes = FALSE,
+              stat="identity", linetype="dashed", color = "black") + 
+  geom_smooth(aes(x=mat2$Alder, y=mat2$X0),data=mat2, inherit.aes = FALSE,
+              stat="identity", linetype="solid", color = "black") + 
+  geom_smooth(aes(x=mat2$Alder, y=mat2$X1),data=mat2, inherit.aes = FALSE,
+              stat="identity", linetype="dashed", color = "black") + 
+  geom_smooth(aes(x=mat2$Alder, y=mat2$X2),data=mat2, inherit.aes = FALSE,
+              stat="identity", linetype="dashed", color = "red") +
+     
+  annotate("text", x=maks+2, y=mat2[rad,"X.2"], label = "-2 SD", color = "red") +
+  annotate("text", x=maks+2, y=mat2[rad,"X.1"], label = "-1 SD", color = "black") +
+  annotate("text", x=maks+2, y=mat2[rad,"X0"] , label = "Mean", color = "black") +
+  annotate("text", x=maks+2, y=mat2[rad,"X1"] , label = "+1 SD", color = "black") +
+  annotate("text", x=maks+2, y=mat2[rad,"X2"] , label = "+2 SD", color = "red") +
+  annotate("text", x=(maks+5), y=mat2[rad,"X2"] , label = "", color = "white")
+
+# Eksportere figuren til tiff/jpeg/png/pdf:
+# ggsave("ous_lmsplot.jpeg", dpi=500, height=10, width=16, units="cm")
+```
+
+
+
+# #########
+# Bootstrapping av modellen for å oppdrive error bars
+# #########
+
+```{r warning=FALSE}
+# Etablerer en orginal LMS-modell som utgangspunkt
+demo_lms <- demo_lms %>% transmute(age=Alder, hormone=T4_TSH_ratio)
+
+obj <- gamlss(hormone ~ cs(age, df=1), 
+              sigma.fo=~cs(age, df=0), 
+              nu.fo=~cs(age, df=1), 
+              family=BCCG, 
+              data=demo_lms)
+
+# Funksjon for å beregne centiler i nye iterasjoner 
+lms <- function(l, m, s, z) {
+        ifelse(abs(l) < 0.01, m*exp(s*z), m * (1 + l*s*z)^(1/l))
+}
+
+# Antall iterasjoner for bootstrap
+b <- 10
+
+# Angir data for bootstrapping
+d <- get(as.character(obj$call["data"]))
+n <- nrow(d)
+
+# Bootstrapping sample
+x <- get(xvar, envir = as.environment(d))
+bx <- seq(ceiling(min(x)*4)/4, floor(max(x)*4)/4, 0.1)
+
+# Forbereder vektorer for p97.5 and p2.5 (som skal fylles med data)
+boothi <- bootlo <- c()
+
+# Run bootstrapping in loop (takes a little while to run)
+for (i in 1:b){
+        
+        cat('\r', paste0(Sys.time())); flush.console()
+        
+        # draw a new sample from data, original n, with replacement
+        b.data <- d[sample(1:n, n, replace = TRUE),]
+        
+        # refit the object with the same parameters, but replace data with bootstrap sample
+        b.obj <- update(obj, data = b.data, trace=FALSE)
+        
+        # retrieve L,M,S-for-age values from bootstrapped LMS models
+        xi <- get(xvar, envir=as.environment(b.data))
+        bl <- approx(xi, predict(b.obj, what="nu", type = "response"), xout=bx)$y
+        bm <- approx(xi, predict(b.obj, what="mu", type = "response"), xout=bx)$y
+        bs <- approx(xi, predict(b.obj, what="sigma", type = "response"), xout=bx)$y
+        
+        # save the limits derived from the bootstrapped sample
+        boothi <- cbind(boothi, lms(bl, bm, bs, + 1.959964)) # coordinates for bootstrapped p97.5
+        bootlo <- cbind(bootlo, lms(bl, bm, bs, - 1.959964)) # coordinates for bootstrapped p2.5
+        
+}
+
+
+# calculate the 'moving' mean and SD of the bootstrapped centiles p97.5 and p2.5
+hi <- apply(boothi, 1, mean)
+hi.se <- apply(boothi, 1, sd)
+lo <- apply(bootlo, 1, mean)
+lo.se <- apply(bootlo, 1, sd)
+
+
+#Bootstrapped 95% confidence interval error ribbons
+BootCentileMat <- data.frame(bx)
+BootCentileMat$upper_hi <- hi + 1.96*hi.se
+BootCentileMat$upper_lo <- hi - 1.96*hi.se
+BootCentileMat$lower_hi <- lo + 1.96*lo.se
+BootCentileMat$lower_lo <- lo - 1.96*lo.se
+# Run only if the the hormone data was log-transformed: log(hormone*1e6)
+#BootCentileMat <- exp(BootCentileMat)/1e6
+#BootCentileMat[,1] <- log(BootCentileMat[,1]*1e6)
+```
+
+
+```{r warning=FALSE}
+# Gjen-etablerer den orginale modellen
+obj <- gamlss(hormone ~ cs(age, df=1), 
+              sigma.fo=~cs(age, df=0), 
+              nu.fo=~cs(age, df=1), 
+              family=BCCG, 
+              data=demo_lms)
+
+# Beregner koordinatene for centilene
+newx <- seq(0,20,0.1)
+CentileMat <- centiles.pred(obj, type = "centiles", xname = "age", xvalues = newx, cent = c(2.5, 25, 50, 75, 97.5))
+# Run only if the the hormone data was log-transformed:
+#CentileMat <- exp(CentileMat)/1e6
+#CentileMat[,1] <- log(CentileMat[,1]*1e6)
+rad <- nrow(CentileMat)
+maks <- max(CentileMat$x)
+
+
+# Plotter LMS-referansekurve med error bars
+ggplot(demo_lms, aes(age,hormone)) + geom_point(shape=23, fill="gray70", color="gray70", size=0.5) + 
+     theme_bw() + labs(title="") + theme(panel.grid.minor=element_blank()) + 
+     scale_x_continuous(name ="Age, years", limits= c(0,24), breaks = seq(0,20, by=2)) + 
+     theme(text = element_text(size=20)) + 
+     scale_y_continuous(name ="T4/TSH ratio", limits= c(0,100)) + theme(legend.position = "none") + 
+       
+        # plotting the 'default' LMS centile lines
+        geom_smooth(aes(x=CentileMat$x, y=CentileMat$`2.5`), 
+                    data=CentileMat, inherit.aes = FALSE,stat="identity",  color = "red") + 
+        # geom_smooth(aes(x=CentileMat$x, y=CentileMat$`25`),  
+        #             data=CentileMat, inherit.aes = FALSE,stat="identity",  color = "black") + 
+        geom_smooth(aes(x=CentileMat$x, y=CentileMat$`50`),  
+                    data=CentileMat, inherit.aes = FALSE,stat="identity",  color = "black") + 
+        #geom_smooth(aes(x=CentileMat$x, y=CentileMat$`75`),  
+        #            data=CentileMat, inherit.aes = FALSE,stat="identity",  color = "black") + 
+        geom_smooth(aes(x=CentileMat$x, y=CentileMat$`97.5`), 
+                    data=CentileMat, inherit.aes = FALSE,stat="identity",  color = "red") +
+        
+        # adding centile annotations
+        annotate("text", x=maks+2, y=CentileMat[rad,"2.5"], label="p2.5", hjust=0, color = "red",size=5) +
+        #annotate("text", x=maks+2, y=CentileMat[rad,"25"],  label="p25",  hjust=0, color = "black",size=5) +
+        annotate("text", x=maks+2, y=CentileMat[rad,"50"],  label="p50",  hjust=0, color = "black",size=5) +
+        #annotate("text", x=maks+2, y=CentileMat[rad,"75"],  label="p75",  hjust=0, color = "black",size=5) +
+        annotate("text", x=maks+2, y=CentileMat[rad,"97.5"],label="p97.5",hjust=0, color = "red",size=5) +
+        annotate("text", x=maks+3, y=CentileMat[rad,"50"],  label="", color = "white") +
+        
+        #adding centile error bars
+        geom_ribbon(data=BootCentileMat, aes(x=bx, ymin=upper_lo, ymax=upper_hi), 
+                    inherit.aes = FALSE, stat="identity", fill="navy", alpha=0.4) +
+        geom_ribbon(data=BootCentileMat, aes(x=bx, ymin=lower_lo, ymax=lower_hi), 
+                    inherit.aes = FALSE, stat="identity", fill="navy", alpha=0.4) 
+
+```
+
+
+
+
+
+
+# Basic LMS:
+# Beregne et LMS referanseområde for hele populasjonen, uten å hensynta alder
+```{r}
+mean   <- mean(demo_df$TSH, na.rm=T)        # gjennomsnitt  
+median <- median(demo_df$TSH, na.rm=T)      # median
+sd     <- sd(demo_df$TSH, na.rm=T)          # standardavvik
+
+# Beregner LMS parametere
+L <- (mean - median) / sd          # L parameter = Skew 
+M <-  mean                         # M parameter = Mean
+S <-  sd / mean                    # S parameter = Coefficient of variation
+```
+
+
+```{r}
+# Beregner centiler
+SDS_2 = (M * (1 + (L * S * -2)) ^ (1 / L))
+SDS_1 = (M * (1 + (L * S * -1)) ^ (1 / L))
+SDS_0  = (M * (1 + (L * S * 0)) ^ (1 / L))
+SDS1  = (M * (1 + (L * S * 1)) ^ (1 / L))
+SDS2 =  (M * (1 + (L * S * 2)) ^ (1 / L))
+```
+
+
+```{r}
+ggplot(demo_df, aes(x=Alder, y=TSH)) + 
+  geom_point(size = 0.5, color = "gray50") + theme_bw() +
+  geom_segment(x = 0, xend = 20, y = SDS_2, yend = SDS_2,  size = 1) + 
+  geom_segment(x = 0, xend = 20, y = SDS_1, yend = SDS_1,  size = 1) +
+  geom_segment(x = 0, xend = 20, y = SDS_0, yend = SDS_0,  size = 1) +
+  geom_segment(x = 0, xend = 20, y = SDS1,  yend = SDS1,  size = 1) +
+  geom_segment(x = 0, xend = 20, y = SDS2,  yend = SDS2,  size = 1) +
+
+  annotate("text", x=22, y=c(SDS_2,SDS_1,SDS_0,SDS1,SDS2), 
+           label = c("-2 SD","-1 SD","mean","+1 SD","+2 SD"),
+           color = c("red", "black", "black", "black", "red")) 
+
+# Konklusjon: referanseområdet bør modelleres som funksjon av alder
+```
+
+
+```{r}
+# Z-score beregning fra LMS-modellen over
+X <- 6                             # TSH blodprøvesvar for ny pasient
+z_score <- (((X/M)^L)-1)/(L*S)     # Z-score beregning med LMS-formel
+z_score                            # Pasientens z-score (SDS)
+pnorm(z_score)*100                 # Pasientens z-score (persentil)
+```

@@ -12,7 +12,6 @@ Interactive reference curves are now available at the Anylite platform | https:/
 # Dataset must contain a column to specify child age: Example below: <Age_yrs> (numerical scale or decimal number)
 # Any number of columns representing numerical measures (e.g. blood sample results, hormone levels) are modelled sequentially as shown below
 
-
 # Import .csv dataset into R/RStudio
 Data <- read.csv(file.choose(), header=T, sep=",", dec=".")    # European .csv has sep=";" and dec=","
 Data_Boys  <- Data[Data$Gender == 1,]                          # New data frame with male observations
